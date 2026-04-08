@@ -7,6 +7,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -50,6 +53,10 @@ export default {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      boxShadow: {
+        glow: '0 0 20px -5px hsl(262 83% 58% / 0.3)',
+        'glow-lg': '0 0 40px -10px hsl(262 83% 58% / 0.25), 0 0 80px -20px hsl(262 83% 58% / 0.1)',
       },
       keyframes: {
         'accordion-down': {

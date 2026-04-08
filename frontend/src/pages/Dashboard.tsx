@@ -35,14 +35,23 @@ export default function Dashboard() {
   }, [sessionId]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">My Learning Dashboard</h1>
+    <div className="min-h-screen bg-aurora">
+      {/* Header */}
+      <header className="glass-strong border-b border-border/30">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <BookOpen className="w-5 h-5" />
+              <span className="font-semibold">AdaptEd</span>
+            </Link>
+            <span className="text-border">|</span>
+            <h1 className="text-sm font-semibold text-foreground">Dashboard</h1>
+          </div>
           <button
             onClick={() => navigate('/')}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
+            <Plus className="w-4 h-4" />
             New Curriculum
           </button>
         </div>

@@ -17,7 +17,13 @@ class Settings(BaseSettings):
     youtube_api_key: str | None = None
     
     # Server
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://frontend:5173",
+        "http://127.0.0.1:5173",
+        "http://0.0.0.0:5173",
+    ]
     
     model_config = SettingsConfigDict(
         env_file=".env",

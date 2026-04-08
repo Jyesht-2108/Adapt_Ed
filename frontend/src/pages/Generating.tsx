@@ -100,8 +100,15 @@ export default function Generating() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen bg-aurora flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background blobs */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-purple-600/8 blur-[100px] animate-blob" />
+        <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] rounded-full bg-violet-500/6 blur-[100px] animate-blob animation-delay-2000" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-lg">
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -138,8 +145,16 @@ export default function Generating() {
               </div>
               <span className="text-sm font-medium">{stepText}</span>
             </div>
-          ))}
-        </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">Generation Failed</h2>
+            <p className="text-sm text-muted-foreground mb-6">{error}</p>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-2.5 rounded-xl gradient-primary text-white font-medium text-sm hover:opacity-90 transition-opacity"
+            >
+              Try Again
+            </button>
+          </motion.div>
+        )}
 
         <div className="mt-6">
           <div className="w-full bg-gray-200 rounded-full h-2">

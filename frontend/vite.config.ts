@@ -10,6 +10,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     port: 5173,
     host: true, // Bind to 0.0.0.0 for Docker
     proxy: {
