@@ -2,9 +2,10 @@
  * Generation stream component - displays SSE progress
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSSEStream } from '../hooks/useSSEStream';
+import ErrorBanner from './ErrorBanner';
 
 interface GenerationStreamProps {
   generationId: string;
@@ -15,6 +16,14 @@ interface GenerationStreamProps {
 export default function GenerationStream({ generationId, goal, cached }: GenerationStreamProps) {
   const navigate = useNavigate();
   const { status, step, totalSteps, chunks, lessonId, isComplete, error, isConnected } = useSSEStream(generationId);
+  const [showDisconnectWarning, setShowDisconnectWarning] = useState(false);
+
+  // Show disconnect warning if connection drops mid-stream
+  useEffect(() => {
+    if (!isConnected && !isComplete && !error && chunks.length > 0) {
+      setShowDisconnectWarning(true);
+    }
+  }, [isConnected, isComplete, error, chunks.length]);
 
   // Redirect to curriculum when complete
   useEffect(() => {
@@ -67,6 +76,16 @@ export default function GenerationStream({ generationId, goal, cached }: Generat
         <p className="text-sm text-gray-500 mb-2">Generating curriculum for:</p>
         <h2 className="text-2xl font-bold text-gray-900">{goal}</h2>
       </div>
+
+      {/* Disconnect warning */}
+      {showDisconnectWarning && (
+        <ErrorBanner
+          type="warning"
+          message="Connection interrupted. Partial content is shown below. You can continue or retry."
+          onRetry={() => window.location.reload()}
+          onDismiss={() => setShowDisconnectWarning(false)}
+        />
+      )}
 
       {/* Progress bar */}
       <div className="mb-8">
