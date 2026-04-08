@@ -1,6 +1,5 @@
 /**
- * Text editor component
- * For text mode in sandbox (conceptual/clinical topics)
+ * Text editor component — dark themed for text mode sandbox
  */
 
 import { useState } from 'react';
@@ -24,11 +23,11 @@ export default function TextEditor({ onChange }: TextEditorProps) {
         value={content}
         onChange={handleChange}
         placeholder="Start writing your answer here..."
-        className="flex-1 w-full p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-base leading-relaxed"
+        className="flex-1 w-full p-4 bg-secondary/30 border border-border/30 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all text-foreground placeholder:text-muted-foreground/40 text-[15px] leading-relaxed"
       />
-      <div className="mt-2 flex justify-between items-center text-sm text-gray-500">
+      <div className="mt-2 flex justify-between items-center text-xs text-muted-foreground/60">
         <span>Text mode</span>
-        <span>{content.length} characters</span>
+        <span className="tabular-nums">{content.length} characters</span>
       </div>
     </div>
   );

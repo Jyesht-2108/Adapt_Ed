@@ -18,7 +18,11 @@ interface SSEStreamState {
   isConnected: boolean;
 }
 
-export function useSSEStream(generationId: string | null) {
+export function useSSEStream(
+  generationId: string | null,
+  goal: string,
+  sessionId: string
+) {
   const [state, setState] = useState<SSEStreamState>({
     status: null,
     step: 0,
@@ -33,9 +37,9 @@ export function useSSEStream(generationId: string | null) {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    if (!generationId) return;
+    if (!generationId || !goal) return;
 
-    const streamUrl = apiClient.getStreamUrl(generationId);
+    const streamUrl = apiClient.getStreamUrl(generationId, goal, sessionId);
     const eventSource = new EventSource(streamUrl);
     eventSourceRef.current = eventSource;
 
@@ -85,7 +89,7 @@ export function useSSEStream(generationId: string | null) {
       }
     });
 
-    // Handle error events
+    // Handle error events from the server (named 'error')
     eventSource.addEventListener('error', (event) => {
       try {
         const data: SSEErrorEvent = JSON.parse((event as MessageEvent).data);
@@ -97,7 +101,7 @@ export function useSSEStream(generationId: string | null) {
         if (data.fatal !== false) {
           eventSource.close();
         }
-      } catch (err) {
+      } catch {
         // Connection error (not a message error)
         setState((prev) => ({
           ...prev,
@@ -110,6 +114,7 @@ export function useSSEStream(generationId: string | null) {
 
     // Handle connection errors
     eventSource.onerror = () => {
+      if (eventSource.readyState === EventSource.CLOSED) return;
       setState((prev) => ({
         ...prev,
         error: 'Connection error. Please check your network.',
@@ -124,7 +129,7 @@ export function useSSEStream(generationId: string | null) {
         eventSource.close();
       }
     };
-  }, [generationId]);
+  }, [generationId, goal, sessionId]);
 
   return state;
 }

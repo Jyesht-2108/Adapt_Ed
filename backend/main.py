@@ -97,7 +97,7 @@ async def generate_curriculum(
     goal_hash_value = hash_goal(request.goal)
     
     try:
-        result = await db.table("lessons").select("id").eq("goal_hash", goal_hash_value).execute()
+        result = await db.table("lessons").select("id, hit_count").eq("goal_hash", goal_hash_value).execute()
         
         if result.data and len(result.data) > 0:
             # Cache hit - increment hit counter

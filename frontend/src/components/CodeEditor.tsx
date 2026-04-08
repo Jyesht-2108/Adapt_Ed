@@ -1,6 +1,6 @@
 /**
  * Code editor component using Monaco
- * For code mode in sandbox
+ * Dark themed for sandbox code mode
  */
 
 import { useRef } from 'react';
@@ -16,7 +16,6 @@ export default function CodeEditor({ language, onChange }: CodeEditorProps) {
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
-    // Focus editor on mount
     editor.focus();
   };
 
@@ -29,20 +28,26 @@ export default function CodeEditor({ language, onChange }: CodeEditorProps) {
       <Editor
         height="100%"
         language={language}
-        theme="vs-light"
-        defaultValue="# Start coding here...\n"
+        theme="vs-dark"
+        defaultValue={`# Start coding here...\n`}
         onChange={handleEditorChange}
         onMount={handleEditorDidMount}
         options={{
           minimap: { enabled: false },
           fontSize: 14,
           lineNumbers: 'on',
-          roundedSelection: false,
+          roundedSelection: true,
           scrollBeyondLastLine: false,
           automaticLayout: true,
           tabSize: 2,
           wordWrap: 'on',
           padding: { top: 16, bottom: 16 },
+          cursorBlinking: 'smooth',
+          cursorSmoothCaretAnimation: 'on',
+          smoothScrolling: true,
+          renderLineHighlight: 'gutter',
+          fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+          fontLigatures: true,
         }}
       />
     </div>
