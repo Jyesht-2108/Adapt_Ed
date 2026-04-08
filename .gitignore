@@ -1,6 +1,7 @@
 # Reference files - not part of the project
 Adapt-Ed-main/
 PRD.md
+TEAM.md
 
 # Python
 __pycache__/
@@ -41,6 +42,7 @@ ENV/
 .env
 .env.local
 .env.*.local
+backend/.env
 
 # OS
 .DS_Store
