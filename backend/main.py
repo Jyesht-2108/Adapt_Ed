@@ -178,6 +178,8 @@ async def get_curriculum(
     db: AsyncClient = Depends(get_supabase)
 ):
     """Fetch a fully generated lesson from cache."""
+    from sandbox import detect_sandbox_mode
+    
     try:
         result = await db.table("lessons").select("*").eq("id", lesson_id).execute()
         
@@ -186,6 +188,9 @@ async def get_curriculum(
         
         lesson_data = result.data[0]
         
+        # Member 2: Auto-detect sandbox mode and language
+        sandbox_mode, sandbox_language = detect_sandbox_mode(lesson_data["goal_raw"])
+        
         return LessonResponse(
             id=lesson_data["id"],
             goal_raw=lesson_data["goal_raw"],
@@ -193,8 +198,8 @@ async def get_curriculum(
             notes=lesson_data.get("notes"),
             sources=lesson_data.get("sources", []),
             created_at=lesson_data["created_at"],
-            sandbox_mode=None,  # Will be set by Member 2
-            sandbox_language=None
+            sandbox_mode=sandbox_mode,
+            sandbox_language=sandbox_language
         )
     except HTTPException:
         raise
@@ -323,20 +328,26 @@ async def update_session_progress(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-# Placeholder for Member 2's sandbox endpoint
+# Member 2: Sandbox endpoint with Socratic agent
 @app.post("/api/v1/sandbox/hint", response_model=SandboxHintResponse)
-async def get_sandbox_hint(request: SandboxHintRequest):
+async def get_sandbox_hint(
+    request: SandboxHintRequest,
+    db: AsyncClient = Depends(get_supabase)
+):
     """
-    Placeholder for Member 2's Socratic hint endpoint.
+    Get a Socratic hint from the MCP agent.
     
-    Member 2 will implement the full MCP agent logic here.
+    Member 2 Phase 1: Full implementation with anti-jailbreak guards.
     """
-    return SandboxHintResponse(
-        hint="This endpoint will be implemented by Member 2",
-        hint_type="direction",
-        attempt_count=request.attempt_count + 1,
-        reflect=False
-    )
+    from sandbox import handle_sandbox_hint
+    
+    try:
+        return await handle_sandbox_hint(request, db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating hint: {str(e)}"
+        )
 
 
 # Phase 2: Retrieval test endpoint

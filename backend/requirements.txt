@@ -22,9 +22,11 @@ beautifulsoup4==4.12.3
 lxml-html-clean==0.4.1
 
 # LangGraph (for Phase 3, but including now)
-langgraph==0.2.45
-langchain==0.3.7
-langchain-core==0.3.15
+# Note: Using compatible versions for Python 3.13
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-core>=0.3.0
+numpy>=2.0.0
 
 # Utilities
 python-multipart==0.0.12
