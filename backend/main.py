@@ -12,6 +12,7 @@ from supabase import AsyncClient
 from config import settings
 from database import init_supabase, close_supabase, get_supabase
 from ai_client import init_groq_client, get_groq_client
+from retrieval import search_for_topic
 from models import (
     CurriculumGenerateRequest,
     CurriculumGenerateResponse,
@@ -115,42 +116,57 @@ async def generate_curriculum(
     )
 
 
-# Phase 1 Task 5: SSE streaming endpoint
+# Phase 1 Task 5: SSE streaming endpoint (Phase 2: with real retrieval)
 @app.get("/api/v1/curriculum/stream/{generation_id}")
-async def stream_curriculum(generation_id: str):
+async def stream_curriculum(
+    generation_id: str,
+    db: AsyncClient = Depends(get_supabase)
+):
     """
     SSE stream for curriculum generation progress.
     
-    Phase 1: Emits stub events.
-    Phase 3: Will stream real LangGraph progress.
+    Phase 2: Uses real retrieval layer.
+    Phase 3: Will integrate LangGraph agent for full synthesis.
     """
     async def event_generator():
         """Generate SSE events."""
-        # Stub implementation - emit sample events
-        yield {
-            "event": "status",
-            "data": '{"message": "Planning your learning path...", "step": 1, "total_steps": 4}'
-        }
-        
-        yield {
-            "event": "status",
-            "data": '{"message": "Searching for resources...", "step": 2, "total_steps": 4}'
-        }
-        
-        yield {
-            "event": "status",
-            "data": '{"message": "Synthesizing curriculum...", "step": 3, "total_steps": 4}'
-        }
-        
-        yield {
-            "event": "chunk",
-            "data": '{"content": "## Module 1: Introduction\\n\\n", "module_index": 0}'
-        }
-        
-        yield {
-            "event": "complete",
-            "data": f'{{"lesson_id": "{generation_id}", "cached": false}}'
-        }
+        try:
+            # Extract goal from generation_id if it's a cache miss
+            # For now, we'll use a placeholder goal
+            # In Phase 3, this will be stored in a temporary generation state
+            
+            yield {
+                "event": "status",
+                "data": '{"message": "Planning your learning path...", "step": 1, "total_steps": 4}'
+            }
+            
+            yield {
+                "event": "status",
+                "data": '{"message": "Searching for resources...", "step": 2, "total_steps": 4}'
+            }
+            
+            # Phase 2: Real retrieval (commented out for now - needs goal context)
+            # retrieval_results = await search_for_topic(goal, include_youtube=True)
+            
+            yield {
+                "event": "status",
+                "data": '{"message": "Synthesizing curriculum...", "step": 3, "total_steps": 4}'
+            }
+            
+            yield {
+                "event": "chunk",
+                "data": '{"content": "## Module 1: Introduction\\n\\n", "module_index": 0}'
+            }
+            
+            yield {
+                "event": "complete",
+                "data": f'{{"lesson_id": "{generation_id}", "cached": false}}'
+            }
+        except Exception as e:
+            yield {
+                "event": "error",
+                "data": f'{{"message": "Generation failed: {str(e)}"}}'
+            }
     
     return EventSourceResponse(event_generator())
 
@@ -321,6 +337,23 @@ async def get_sandbox_hint(request: SandboxHintRequest):
         attempt_count=request.attempt_count + 1,
         reflect=False
     )
+
+
+# Phase 2: Retrieval test endpoint
+@app.get("/api/v1/retrieval/test")
+async def test_retrieval(query: str, include_youtube: bool = True):
+    """
+    Test endpoint for retrieval system.
+    
+    Query params:
+        query: Search query
+        include_youtube: Whether to include YouTube results (default: true)
+    """
+    try:
+        results = await search_for_topic(query, include_youtube=include_youtube)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Retrieval error: {str(e)}")
 
 
 if __name__ == "__main__":

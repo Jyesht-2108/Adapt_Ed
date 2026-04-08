@@ -25,7 +25,8 @@ async def close_supabase():
     """Close Supabase client connection."""
     global supabase_client
     if supabase_client:
-        await supabase_client.close()
+        # Supabase AsyncClient doesn't have a close method
+        # Just set to None for cleanup
         supabase_client = None
 
 
