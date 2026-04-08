@@ -1,8 +1,3 @@
-# Reference files - not part of the project
-Adapt-Ed-main/
-PRD.md
-TEAM.md
-
 # Python
 __pycache__/
 *.py[cod]
@@ -24,41 +19,67 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Virtual environments
 venv/
-env/
 ENV/
-.venv
+env/
 
-# IDEs
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+dist-ssr/
+*.local
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-backend/.env
-
-# OS
 .DS_Store
-Thumbs.db
+
+# Extension
+extension/fonts/OpenDyslexic-Regular.otf
+extension/fonts/OpenDyslexic.b64
+extension/icons/*.png
+!extension/icons/README.md
 
 # Logs
-*.log
 logs/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+Thumbs.db
+.DS_Store
 
 # Testing
 .coverage
 htmlcov/
 .pytest_cache/
+.tox/
 
-# Node (if frontend is added)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Build
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Temporary
+*.tmp
+*.temp
+.cache/

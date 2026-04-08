@@ -1,17 +1,13 @@
-/**
- * Main App component with routing
- */
-
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import Generating from './pages/Generating';
-import Curriculum from './pages/Curriculum';
-import Sandbox from './pages/Sandbox';
-import Dashboard from './pages/Dashboard';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
+import Generating from './pages/Generating'
+import Curriculum from './pages/Curriculum'
+import Sandbox from './pages/Sandbox'
+import Dashboard from './pages/Dashboard'
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/generating/:generationId" element={<Generating />} />
@@ -19,8 +15,8 @@ function App() {
         <Route path="/sandbox/:lessonId" element={<Sandbox />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
-    </BrowserRouter>
-  );
+    </Router>
+  )
 }
 
-export default App;
+export default App
