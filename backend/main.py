@@ -28,6 +28,10 @@ from models import (
     Module,
     Lesson,
     LessonSource,
+    VivaStartRequest,
+    VivaStartResponse,
+    VivaChatRequest,
+    VivaChatResponse,
 )
 
 
@@ -405,6 +409,112 @@ async def test_retrieval(query: str, include_youtube: bool = True):
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Retrieval error: {str(e)}")
+
+
+# ============================================================
+# Viva Exam Endpoints
+# ============================================================
+
+# In-memory viva session storage (sufficient for hackathon)
+viva_sessions: dict = {}
+
+
+@app.post("/api/v1/viva/start", response_model=VivaStartResponse)
+async def start_viva(request: VivaStartRequest):
+    """
+    Start a new viva examination session.
+    
+    Generates the first question and returns session info.
+    """
+    from viva_agent import generate_opening_question
+    
+    try:
+        viva_session_id = f"viva_{uuid.uuid4().hex[:12]}"
+        
+        first_question = await generate_opening_question(
+            module_topic=request.module_topic,
+            target_role=request.target_role
+        )
+        
+        # Store session
+        viva_sessions[viva_session_id] = {
+            "lesson_id": request.lesson_id,
+            "module_topic": request.module_topic,
+            "target_role": request.target_role,
+            "transcript": [
+                {"role": "interviewer", "content": first_question}
+            ],
+            "scores": [],
+            "question_count": 1,
+            "is_complete": False,
+        }
+        
+        return VivaStartResponse(
+            viva_session_id=viva_session_id,
+            first_question=first_question,
+            module_topic=request.module_topic
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start viva: {str(e)}")
+
+
+@app.post("/api/v1/viva/chat", response_model=VivaChatResponse)
+async def viva_chat(request: VivaChatRequest):
+    """
+    Handle viva conversation — evaluate user answer and generate next question.
+    """
+    from viva_agent import get_interviewer_response
+    
+    session_id = request.session_id
+    
+    if session_id not in viva_sessions:
+        raise HTTPException(status_code=404, detail="Viva session not found")
+    
+    session = viva_sessions[session_id]
+    
+    if session["is_complete"]:
+        raise HTTPException(status_code=400, detail="Viva session already complete")
+    
+    # Add user answer to transcript
+    session["transcript"].append({
+        "role": "user",
+        "content": request.user_text
+    })
+    
+    try:
+        reply, score, next_question, is_complete, final_feedback = await get_interviewer_response(
+            module_topic=request.module_topic or session["module_topic"],
+            user_answer=request.user_text,
+            conversation_history=session["transcript"],
+            question_count=session["question_count"],
+            target_role=request.target_role or session["target_role"]
+        )
+        
+        # Update session
+        session["scores"].append(score)
+        session["question_count"] += 1
+        session["is_complete"] = is_complete
+        
+        # Add interviewer response to transcript
+        session["transcript"].append({
+            "role": "interviewer",
+            "content": f"{reply}\n\n{next_question}" if next_question else reply
+        })
+        
+        # Calculate cumulative score
+        cumulative_score = sum(session["scores"]) // len(session["scores"]) if session["scores"] else 0
+        
+        return VivaChatResponse(
+            reply=reply,
+            score=score,
+            cumulative_score=cumulative_score,
+            next_question=next_question or "",
+            question_count=session["question_count"] - 1,
+            is_complete=is_complete,
+            final_feedback=final_feedback
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Viva chat error: {str(e)}")
 
 
 if __name__ == "__main__":

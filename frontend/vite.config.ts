@@ -11,9 +11,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: true, // Bind to 0.0.0.0 for Docker
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: process.env.VITE_API_URL || 'http://localhost:8000',
         changeOrigin: true,
       },
     },

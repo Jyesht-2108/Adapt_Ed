@@ -100,3 +100,45 @@ class ProgressEntry(BaseModel):
 class ProgressResponse(BaseModel):
     """Response for session progress."""
     curriculums: list[ProgressEntry]
+
+
+# Viva Exam Models
+class VivaStartRequest(BaseModel):
+    """Request to start a viva examination session."""
+    lesson_id: str
+    module_topic: str
+    target_role: str = "Senior Technical Interviewer"
+    session_id: str
+
+
+class VivaStartResponse(BaseModel):
+    """Response when starting a viva session."""
+    viva_session_id: str
+    first_question: str
+    module_topic: str
+
+
+class VivaChatRequest(BaseModel):
+    """Request for viva interaction (user sends answer)."""
+    session_id: str
+    user_text: str
+    module_topic: str
+    target_role: str = "Senior Technical Interviewer"
+
+
+class VivaChatResponse(BaseModel):
+    """Response from viva interviewer."""
+    reply: str
+    score: int
+    cumulative_score: int
+    next_question: str
+    question_count: int
+    is_complete: bool
+    final_feedback: str | None = None
+
+
+class VivaViolation(BaseModel):
+    """A proctoring violation during viva exam."""
+    type: str
+    message: str
+    timestamp: str

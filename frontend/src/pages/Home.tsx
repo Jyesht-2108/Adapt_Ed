@@ -4,11 +4,15 @@ import { BookOpen, Sparkles, ArrowRight, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { motion } from 'framer-motion'
+import { apiClient } from '../lib/api'
+import { useAppStore } from '../store/useAppStore'
 
 export default function Home() {
   const [goal, setGoal] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const sessionId = useAppStore((state) => state.sessionId)
 
   const exampleGoals = [
     'Build a REST API with FastAPI',
@@ -22,7 +26,7 @@ export default function Home() {
     e.preventDefault()
     setError('')
 
-    if (goal.length < 10) {
+    if (goal.trim().length < 10) {
       setError('Please enter at least 10 characters')
       return
     }
@@ -32,9 +36,22 @@ export default function Home() {
       return
     }
 
-    // TODO: Call API to generate curriculum
-    // For now, navigate to generating page
-    navigate(`/generating/demo-${Date.now()}`)
+    setIsLoading(true)
+
+    try {
+      const response = await apiClient.generateCurriculum({
+        goal: goal.trim(),
+        session_id: sessionId,
+      })
+
+      // Navigate to generating page with context
+      navigate(`/generating/${response.generation_id}`, {
+        state: { cached: response.cached, goal: goal.trim() },
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start generation')
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -82,10 +99,14 @@ export default function Home() {
                       <textarea
                         id="goal"
                         value={goal}
-                        onChange={(e) => setGoal(e.target.value)}
+                        onChange={(e) => {
+                          setGoal(e.target.value)
+                          if (error) setError('')
+                        }}
                         placeholder="e.g., Learn machine learning fundamentals, Master React hooks, Understand quantum computing..."
                         className="w-full px-4 py-3 border-2 border-input rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none resize-none transition-all text-foreground placeholder:text-muted-foreground bg-background"
                         rows={4}
+                        disabled={isLoading}
                       />
                       <div className="absolute bottom-3 right-3 text-sm text-muted-foreground">
                         {goal.length}/300
@@ -103,13 +124,22 @@ export default function Home() {
 
                   <Button
                     type="submit"
-                    disabled={goal.length < 10}
+                    disabled={goal.trim().length < 10 || isLoading}
                     size="lg"
                     className="w-full text-base"
                   >
-                    <Sparkles className="w-5 h-5" />
-                    Generate My Curriculum
-                    <ArrowRight className="w-5 h-5" />
+                    {isLoading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        Generate My Curriculum
+                        <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
                   </Button>
                 </form>
 
@@ -124,7 +154,8 @@ export default function Home() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.2 + idx * 0.05 }}
                         onClick={() => setGoal(example)}
-                        className="px-3 py-1.5 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 transition-colors border border-border"
+                        disabled={isLoading}
+                        className="px-3 py-1.5 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 transition-colors border border-border disabled:opacity-50"
                       >
                         {example}
                       </motion.button>

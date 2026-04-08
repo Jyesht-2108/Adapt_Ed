@@ -9,6 +9,7 @@ import Generating from './pages/Generating';
 import Curriculum from './pages/Curriculum';
 import Sandbox from './pages/Sandbox';
 import Dashboard from './pages/Dashboard';
+import VivaPage from './pages/VivaPage';
 
 // Page transition variants
 const pageVariants = {
@@ -102,6 +103,19 @@ function AnimatedRoutes() {
               exit="exit"
             >
               <Dashboard />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/viva/:lessonId"
+          element={
+            <motion.div
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <VivaPage />
             </motion.div>
           }
         />

@@ -18,7 +18,13 @@ interface SSEStreamState {
   isConnected: boolean;
 }
 
-export function useSSEStream(generationId: string | null) {
+interface UseSSEStreamOptions {
+  generationId: string | null;
+  goal: string;
+  sessionId: string;
+}
+
+export function useSSEStream({ generationId, goal, sessionId }: UseSSEStreamOptions) {
   const [state, setState] = useState<SSEStreamState>({
     status: null,
     step: 0,
@@ -33,9 +39,9 @@ export function useSSEStream(generationId: string | null) {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    if (!generationId) return;
+    if (!generationId || !goal) return;
 
-    const streamUrl = apiClient.getStreamUrl(generationId);
+    const streamUrl = apiClient.getStreamURL(generationId, goal, sessionId);
     const eventSource = new EventSource(streamUrl);
     eventSourceRef.current = eventSource;
 
@@ -85,7 +91,7 @@ export function useSSEStream(generationId: string | null) {
       }
     });
 
-    // Handle error events
+    // Handle custom error events from backend
     eventSource.addEventListener('error', (event) => {
       try {
         const data: SSEErrorEvent = JSON.parse((event as MessageEvent).data);
@@ -97,24 +103,24 @@ export function useSSEStream(generationId: string | null) {
         if (data.fatal !== false) {
           eventSource.close();
         }
-      } catch (err) {
-        // Connection error (not a message error)
-        setState((prev) => ({
-          ...prev,
-          error: 'Connection lost. Please try again.',
-          isConnected: false,
-        }));
-        eventSource.close();
+      } catch {
+        // Connection error (not a message error) — handled by onerror
       }
     });
 
     // Handle connection errors
     eventSource.onerror = () => {
-      setState((prev) => ({
-        ...prev,
-        error: 'Connection error. Please check your network.',
-        isConnected: false,
-      }));
+      // Only set error if we haven't completed successfully
+      setState((prev) => {
+        if (prev.isComplete) return prev;
+        return {
+          ...prev,
+          error: prev.chunks.length > 0
+            ? 'Connection lost. Partial content is shown.'
+            : 'Connection error. Please check your network.',
+          isConnected: false,
+        };
+      });
       eventSource.close();
     };
 
@@ -124,7 +130,7 @@ export function useSSEStream(generationId: string | null) {
         eventSource.close();
       }
     };
-  }, [generationId]);
+  }, [generationId, goal, sessionId]);
 
   return state;
 }
