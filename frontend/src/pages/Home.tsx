@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BookOpen, Sparkles, ArrowRight, Zap } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { motion } from 'framer-motion'
 
 export default function Home() {
   const [goal, setGoal] = useState('')
@@ -34,66 +38,154 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-gray-800 mb-4">AdaptEd</h1>
-          <p className="text-xl text-gray-600">
-            Master any subject, at your own pace, in a format that works for your brain
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit}>
-            <label htmlFor="goal" className="block text-lg font-semibold text-gray-700 mb-3">
-              What do you want to learn?
-            </label>
-            <textarea
-              id="goal"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="Enter your learning goal..."
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none resize-none"
-              rows={3}
-            />
-            {error && <p className="text-error text-sm mt-2">{error}</p>}
-            <p className="text-sm text-gray-500 mt-2">
-              {goal.length}/300 characters
-            </p>
-
-            <button
-              type="submit"
-              className="w-full mt-4 px-6 py-4 bg-primary text-white text-lg font-semibold rounded-lg hover:bg-primary-dark transition-colors"
-            >
-              Generate My Curriculum
-            </button>
-          </form>
-
-          <div className="mt-8">
-            <p className="text-sm text-gray-600 mb-3">Examples:</p>
-            <div className="flex flex-wrap gap-2">
-              {exampleGoals.map((example, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setGoal(example)}
-                  className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-gray-200 transition-colors"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="text-center mt-6">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="text-gray-600 hover:text-gray-800 underline"
+      <div className="relative min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-5xl w-full">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
           >
-            View my progress
-          </button>
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-6 shadow-lg">
+              <BookOpen className="w-9 h-9 text-white" />
+            </div>
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent mb-4">
+              AdaptEd
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Master any subject, at your own pace, in a format that works for your brain
+            </p>
+          </motion.div>
+
+          {/* Main Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="border-2 shadow-2xl">
+              <CardContent className="p-8">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <label htmlFor="goal" className="block text-lg font-semibold text-foreground mb-3">
+                      What do you want to learn today?
+                    </label>
+                    <div className="relative">
+                      <textarea
+                        id="goal"
+                        value={goal}
+                        onChange={(e) => setGoal(e.target.value)}
+                        placeholder="e.g., Learn machine learning fundamentals, Master React hooks, Understand quantum computing..."
+                        className="w-full px-4 py-3 border-2 border-input rounded-lg focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none resize-none transition-all text-foreground placeholder:text-muted-foreground bg-background"
+                        rows={4}
+                      />
+                      <div className="absolute bottom-3 right-3 text-sm text-muted-foreground">
+                        {goal.length}/300
+                      </div>
+                    </div>
+                    {error && (
+                      <div className="mt-2 flex items-center gap-2 text-destructive text-sm">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                        {error}
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={goal.length < 10}
+                    size="lg"
+                    className="w-full text-base"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Generate My Curriculum
+                    <ArrowRight className="w-5 h-5" />
+                  </Button>
+                </form>
+
+                {/* Examples Section */}
+                <div className="mt-8 pt-8 border-t border-border">
+                  <p className="text-sm font-medium text-muted-foreground mb-4">Popular learning goals:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {exampleGoals.map((example, idx) => (
+                      <motion.button
+                        key={idx}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 + idx * 0.05 }}
+                        onClick={() => setGoal(example)}
+                        className="px-3 py-1.5 bg-secondary text-secondary-foreground text-sm font-medium rounded-md hover:bg-secondary/80 transition-colors border border-border"
+                      >
+                        {example}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Features */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            <FeatureCard
+              icon={<Zap className="w-6 h-6" />}
+              title="AI-Powered"
+              description="Personalized curriculum generated by advanced AI"
+            />
+            <FeatureCard
+              icon={<BookOpen className="w-6 h-6" />}
+              title="Adaptive Learning"
+              description="Content that adapts to your learning style"
+            />
+            <FeatureCard
+              icon={<Sparkles className="w-6 h-6" />}
+              title="Interactive"
+              description="Practice with code sandbox and viva exams"
+            />
+          </motion.div>
+
+          {/* Footer Link */}
+          <div className="text-center mt-8">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              View my progress
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
+  )
+}
+
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+  return (
+    <Card className="border-border/50 hover:border-primary/50 transition-colors">
+      <CardContent className="p-6">
+        <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-4">
+          {icon}
+        </div>
+        <h3 className="font-semibold text-foreground mb-2">{title}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
   )
 }
