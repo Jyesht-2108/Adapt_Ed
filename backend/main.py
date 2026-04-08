@@ -1,5 +1,6 @@
 """AdaptEd FastAPI backend - Member 1 Phase 1 implementation."""
 import hashlib
+import json
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -13,6 +14,7 @@ from config import settings
 from database import init_supabase, close_supabase, get_supabase
 from ai_client import init_groq_client, get_groq_client
 from retrieval import search_for_topic
+from langgraph_agent import generate_curriculum_with_langgraph, stream_curriculum_generation
 from models import (
     CurriculumGenerateRequest,
     CurriculumGenerateResponse,
@@ -80,17 +82,16 @@ async def root():
     }
 
 
-# Phase 1 Task 4: POST /curriculum/generate (stub)
+# Phase 3: POST /curriculum/generate (with LangGraph)
 @app.post("/api/v1/curriculum/generate", response_model=CurriculumGenerateResponse)
 async def generate_curriculum(
     request: CurriculumGenerateRequest,
     db: AsyncClient = Depends(get_supabase)
 ):
     """
-    Initiate curriculum generation.
+    Initiate curriculum generation with LangGraph agent.
     
-    Phase 1: Returns stub response with generation_id.
-    Phase 3: Will integrate LangGraph agent.
+    Checks cache first, then triggers LangGraph pipeline if needed.
     """
     # Check cache first
     goal_hash_value = hash_goal(request.goal)
@@ -99,73 +100,112 @@ async def generate_curriculum(
         result = await db.table("lessons").select("id").eq("goal_hash", goal_hash_value).execute()
         
         if result.data and len(result.data) > 0:
-            # Cache hit
+            # Cache hit - increment hit counter
+            lesson_id = result.data[0]["id"]
+            await db.table("lessons").update({
+                "hit_count": result.data[0].get("hit_count", 0) + 1
+            }).eq("id", lesson_id).execute()
+            
             return CurriculumGenerateResponse(
-                generation_id=result.data[0]["id"],
+                generation_id=lesson_id,
                 cached=True
             )
     except Exception as e:
         print(f"Cache lookup error: {e}")
     
-    # Cache miss - generate new ID
-    generation_id = f"gen_{uuid.uuid4().hex[:12]}"
+    # Cache miss - generate new lesson ID and trigger generation
+    lesson_id = f"les_{uuid.uuid4().hex[:12]}"
+    
+    # Store generation request in background
+    # The actual generation will happen via the stream endpoint
     
     return CurriculumGenerateResponse(
-        generation_id=generation_id,
+        generation_id=lesson_id,
         cached=False
     )
 
 
-# Phase 1 Task 5: SSE streaming endpoint (Phase 2: with real retrieval)
+# Phase 3: SSE streaming endpoint (with LangGraph)
 @app.get("/api/v1/curriculum/stream/{generation_id}")
 async def stream_curriculum(
     generation_id: str,
+    goal: str,
+    session_id: str,
     db: AsyncClient = Depends(get_supabase)
 ):
     """
-    SSE stream for curriculum generation progress.
+    SSE stream for curriculum generation progress using LangGraph.
     
-    Phase 2: Uses real retrieval layer.
-    Phase 3: Will integrate LangGraph agent for full synthesis.
+    Executes the full 4-node LangGraph pipeline and streams progress.
     """
     async def event_generator():
         """Generate SSE events."""
         try:
-            # Extract goal from generation_id if it's a cache miss
-            # For now, we'll use a placeholder goal
-            # In Phase 3, this will be stored in a temporary generation state
+            # Check if this is a cached lesson
+            if generation_id.startswith("les_"):
+                # Try to fetch from cache
+                result = await db.table("lessons").select("*").eq("id", generation_id).execute()
+                if result.data and len(result.data) > 0:
+                    yield {
+                        "event": "complete",
+                        "data": json.dumps({"lesson_id": generation_id, "cached": True})
+                    }
+                    return
             
-            yield {
-                "event": "status",
-                "data": '{"message": "Planning your learning path...", "step": 1, "total_steps": 4}'
+            # Not cached - run LangGraph generation
+            goal_hash_value = hash_goal(goal)
+            final_state = None
+            
+            # Execute LangGraph with streaming
+            async for event_type, data in stream_curriculum_generation(
+                goal=goal,
+                goal_hash=goal_hash_value,
+                session_id=session_id
+            ):
+                if event_type == "state":
+                    # Final state - don't send as event, store it
+                    final_state = data
+                else:
+                    # Send progress events
+                    yield {
+                        "event": event_type,
+                        "data": json.dumps(data)
+                    }
+            
+            if final_state is None:
+                raise Exception("Generation completed but no final state received")
+            
+            # Store in database
+            lesson_data = {
+                "id": generation_id,
+                "goal_hash": goal_hash_value,
+                "goal_raw": goal,
+                "content": final_state["formatted_curriculum"],
+                "notes": final_state["notes"],
+                "sources": final_state["sources"],
+                "hit_count": 0
             }
             
-            yield {
-                "event": "status",
-                "data": '{"message": "Searching for resources...", "step": 2, "total_steps": 4}'
-            }
+            await db.table("lessons").insert(lesson_data).execute()
             
-            # Phase 2: Real retrieval (commented out for now - needs goal context)
-            # retrieval_results = await search_for_topic(goal, include_youtube=True)
-            
-            yield {
-                "event": "status",
-                "data": '{"message": "Synthesizing curriculum...", "step": 3, "total_steps": 4}'
-            }
-            
-            yield {
-                "event": "chunk",
-                "data": '{"content": "## Module 1: Introduction\\n\\n", "module_index": 0}'
-            }
-            
+            # Send completion event
             yield {
                 "event": "complete",
-                "data": f'{{"lesson_id": "{generation_id}", "cached": false}}'
+                "data": json.dumps({
+                    "lesson_id": generation_id,
+                    "cached": False,
+                    "sources_count": len(final_state["sources"]),
+                    "modules_count": len(final_state["formatted_curriculum"].get("modules", []))
+                })
             }
+            
         except Exception as e:
+            print(f"Stream error: {e}")
+            import traceback
+            traceback.print_exc()
             yield {
                 "event": "error",
-                "data": f'{{"message": "Generation failed: {str(e)}"}}'
+                "data": json.dumps({"message": f"Generation failed: {str(e)}", "fatal": True})
             }
     
     return EventSourceResponse(event_generator())
@@ -178,6 +218,8 @@ async def get_curriculum(
     db: AsyncClient = Depends(get_supabase)
 ):
     """Fetch a fully generated lesson from cache."""
+    from sandbox import detect_sandbox_mode
+    
     try:
         result = await db.table("lessons").select("*").eq("id", lesson_id).execute()
         
@@ -186,6 +228,9 @@ async def get_curriculum(
         
         lesson_data = result.data[0]
         
+        # Member 2: Auto-detect sandbox mode and language
+        sandbox_mode, sandbox_language = detect_sandbox_mode(lesson_data["goal_raw"])
+        
         return LessonResponse(
             id=lesson_data["id"],
             goal_raw=lesson_data["goal_raw"],
@@ -193,8 +238,8 @@ async def get_curriculum(
             notes=lesson_data.get("notes"),
             sources=lesson_data.get("sources", []),
             created_at=lesson_data["created_at"],
-            sandbox_mode=None,  # Will be set by Member 2
-            sandbox_language=None
+            sandbox_mode=sandbox_mode,
+            sandbox_language=sandbox_language
         )
     except HTTPException:
         raise
@@ -323,20 +368,26 @@ async def update_session_progress(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-# Placeholder for Member 2's sandbox endpoint
+# Member 2: Sandbox endpoint with Socratic agent
 @app.post("/api/v1/sandbox/hint", response_model=SandboxHintResponse)
-async def get_sandbox_hint(request: SandboxHintRequest):
+async def get_sandbox_hint(
+    request: SandboxHintRequest,
+    db: AsyncClient = Depends(get_supabase)
+):
     """
-    Placeholder for Member 2's Socratic hint endpoint.
+    Get a Socratic hint from the MCP agent.
     
-    Member 2 will implement the full MCP agent logic here.
+    Member 2 Phase 1: Full implementation with anti-jailbreak guards.
     """
-    return SandboxHintResponse(
-        hint="This endpoint will be implemented by Member 2",
-        hint_type="direction",
-        attempt_count=request.attempt_count + 1,
-        reflect=False
-    )
+    from sandbox import handle_sandbox_hint
+    
+    try:
+        return await handle_sandbox_hint(request, db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating hint: {str(e)}"
+        )
 
 
 # Phase 2: Retrieval test endpoint
