@@ -147,6 +147,8 @@ class YouTubeRetriever:
                         metadata={
                             "video_id": video_id,
                             "channel": video.get("channel", ""),
+                            "views": video.get("views", 0),
+                            "likes": video.get("likes", 0),
                             "full_transcript_length": len(transcript_text)
                         }
                     ))
@@ -158,36 +160,75 @@ class YouTubeRetriever:
             return []
     
     async def _search_videos(self, query: str) -> List[Dict[str, str]]:
-        """Search for videos using YouTube Data API v3."""
+        """Search for videos using YouTube Data API v3, sorted by view count."""
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(
+                # Search for videos sorted by view count (relevance + popularity)
+                search_response = await client.get(
                     f"{self.base_url}/search",
                     params={
                         "part": "snippet",
                         "q": query,
                         "type": "video",
-                        "maxResults": self.max_videos * 2,
+                        "maxResults": self.max_videos * 3,  # Get more to filter
                         "key": self.api_key,
-                        "videoCaption": "closedCaption"  # Prefer videos with captions
+                        "videoCaption": "closedCaption",  # Prefer videos with captions
+                        "order": "viewCount",  # Sort by view count
+                        "relevanceLanguage": "en"
                     },
                     timeout=10.0
                 )
                 
-                if response.status_code != 200:
-                    print(f"YouTube API error: {response.status_code} - {response.text}")
+                if search_response.status_code != 200:
+                    print(f"YouTube API error: {search_response.status_code} - {search_response.text}")
                     return []
                 
-                data = response.json()
+                search_data = search_response.json()
+                video_ids = [item["id"]["videoId"] for item in search_data.get("items", [])]
                 
-                videos = []
-                for item in data.get("items", []):
-                    videos.append({
+                if not video_ids:
+                    return []
+                
+                # Get video statistics (views, likes) for ranking
+                stats_response = await client.get(
+                    f"{self.base_url}/videos",
+                    params={
+                        "part": "snippet,statistics",
+                        "id": ",".join(video_ids),
+                        "key": self.api_key
+                    },
+                    timeout=10.0
+                )
+                
+                if stats_response.status_code != 200:
+                    print(f"YouTube stats API error: {stats_response.status_code}")
+                    # Fallback to search results without stats
+                    return [{
                         "id": item["id"]["videoId"],
                         "title": item["snippet"]["title"],
                         "channel": item["snippet"]["channelTitle"],
-                        "description": item["snippet"]["description"]
+                        "description": item["snippet"]["description"],
+                        "views": 0,
+                        "likes": 0
+                    } for item in search_data.get("items", [])]
+                
+                stats_data = stats_response.json()
+                
+                # Build video list with statistics
+                videos = []
+                for item in stats_data.get("items", []):
+                    stats = item.get("statistics", {})
+                    videos.append({
+                        "id": item["id"],
+                        "title": item["snippet"]["title"],
+                        "channel": item["snippet"]["channelTitle"],
+                        "description": item["snippet"]["description"],
+                        "views": int(stats.get("viewCount", 0)),
+                        "likes": int(stats.get("likeCount", 0))
                     })
+                
+                # Sort by views (already sorted by API, but ensure it)
+                videos.sort(key=lambda v: v["views"], reverse=True)
                 
                 return videos
                 
