@@ -383,7 +383,7 @@ Contributions welcome! Please:
 - **xAI** for Grok models
 - **Supabase** for managed Postgres
 - **OpenDyslexic** font project
-- All open-source contributors
+- All open-source contributors.
 
 ---
 
