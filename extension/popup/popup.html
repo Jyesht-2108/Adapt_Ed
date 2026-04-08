@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdaptEd Dyslexic Mode</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AdaptEd</h1>
+      <p class="subtitle">Dyslexic Mode</p>
+    </header>
+
+    <div class="section">
+      <div class="toggle-container">
+        <label class="toggle-label">
+          <span>Global Mode</span>
+          <small>Apply to all websites</small>
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="globalModeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Registered Domains</h2>
+      <div id="domainsList" class="domains-list">
+        <p class="empty-state">No domains registered yet</p>
+      </div>
+      <button id="clearDomains" class="btn-secondary">Clear All Domains</button>
+    </div>
+
+    <div class="section">
+      <button id="testCurrentPage" class="btn-primary">Apply to Current Page</button>
+    </div>
+
+    <footer>
+      <p class="info">Click citation links in AdaptEd to automatically register domains</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
