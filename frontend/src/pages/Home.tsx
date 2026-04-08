@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiClient } from '../lib/api'
+import { useAppStore } from '../store/useAppStore'
 
 export default function Home() {
   const [goal, setGoal] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
+  const sessionId = useAppStore((state) => state.sessionId)
 
   const exampleGoals = [
     'Build a REST API with FastAPI',
@@ -28,9 +32,22 @@ export default function Home() {
       return
     }
 
-    // TODO: Call API to generate curriculum
-    // For now, navigate to generating page
-    navigate(`/generating/demo-${Date.now()}`)
+    setIsSubmitting(true)
+
+    try {
+      // Call API to generate curriculum
+      const response = await apiClient.generateCurriculum({
+        goal,
+        session_id: sessionId,
+      })
+
+      // Navigate to generating page with generation ID
+      navigate(`/generating/${response.generation_id}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start generation'
+      setError(message)
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -63,9 +80,17 @@ export default function Home() {
 
             <button
               type="submit"
-              className="w-full mt-4 px-6 py-4 bg-primary text-white text-lg font-semibold rounded-lg hover:bg-primary-dark transition-colors"
+              disabled={isSubmitting}
+              className="w-full mt-4 px-6 py-4 bg-primary text-white text-lg font-semibold rounded-lg hover:bg-primary-dark transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Generate My Curriculum
+              {isSubmitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin">⏳</span>
+                  Starting generation...
+                </span>
+              ) : (
+                'Generate My Curriculum'
+              )}
             </button>
           </form>
 
